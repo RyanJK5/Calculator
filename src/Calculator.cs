@@ -23,7 +23,9 @@ public class Calculator {
     }
 
     private void parse(string str) {
-        
+        foreach (string s in createTokens(str)) {
+            Console.WriteLine(s);
+        }
     }
 
     private List<string> createTokens(string str) {
@@ -35,13 +37,15 @@ public class Calculator {
         var result = new List<string>();
         var tokenStartIndex = 0;
         for (var i = 1; i < str.Length; i++) {
-            if (Double.TryParse(str.Substring(tokenStartIndex, i), out double x)) {
+            if (Double.TryParse(str.Substring(tokenStartIndex, i - tokenStartIndex), out double x)) {
                 continue;
             }
-            if (Double.TryParse(str.Substring(tokenStartIndex, i - 1), out double y)) {
-                result.Add(str.Substring(tokenStartIndex, i - 1));    
+            if (Double.TryParse(str.Substring(tokenStartIndex, i - 1 - tokenStartIndex), out double y)) {
+                result.Add(str.Substring(tokenStartIndex, i - 1 - tokenStartIndex));
+                tokenStartIndex = i;
             }
         }
+        result.Add(str.Substring(tokenStartIndex));
         return result;
     }
 
