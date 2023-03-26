@@ -24,7 +24,7 @@ public class Calculator {
 
     private void parse(string str) {
         foreach (string s in createTokens(str)) {
-            Console.WriteLine(s);
+            Console.Write(s + " ");
         }
     }
 
@@ -42,6 +42,7 @@ public class Calculator {
             }
             if (Double.TryParse(str.Substring(tokenStartIndex, i - 1 - tokenStartIndex), out double y)) {
                 result.Add(str.Substring(tokenStartIndex, i - 1 - tokenStartIndex));
+                result.Add(str[i - 1].ToString());
                 tokenStartIndex = i;
             }
         }
