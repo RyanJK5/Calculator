@@ -2,7 +2,7 @@ using System;
 
 public class Calculator {
     
-    private readonly char[] validChars = {
+    private static readonly char[] validChars = {
         '.',
         '+',
         '-',
@@ -13,18 +13,26 @@ public class Calculator {
         ')'
     };
 
+    private const string OpenDelimeter = "(";
+    private const string CloseDelimeter = ")";
+
+
     public void Start() {
-        string? str;
-        do {
-            Console.Write("Enter expression: ");
-            str = Console.ReadLine();
-        } while (str == null || !legalExpression(str));
-        parse(str);
+        while (true) {
+            string? str;
+            do {
+                Console.Write("Enter expression: ");
+                str = Console.ReadLine();
+            } while (str == null || !validCharacters(str));
+            parse(str);
+        }
     }
 
     private void parse(string str) {
-        foreach (string s in createTokens(str)) {
-            Console.Write(s + " ");
+        List<string> tokens = createTokens(str);
+        if (!validExpresion(tokens)) {
+            Console.WriteLine("SYNTAX ERROR");
+            return;
         }
     }
 
@@ -36,21 +44,55 @@ public class Calculator {
         }
         var result = new List<string>();
         var tokenStartIndex = 0;
-        for (var i = 1; i < str.Length; i++) {
-            if (Double.TryParse(str.Substring(tokenStartIndex, i - tokenStartIndex), out double x)) {
+        for (var i = 1; i <= str.Length; i++) {
+            if (i != str.Length && isNumber(str.Substring(tokenStartIndex, i - tokenStartIndex))) {
                 continue;
             }
-            if (Double.TryParse(str.Substring(tokenStartIndex, i - 1 - tokenStartIndex), out double y)) {
+            if (isNumber(str.Substring(tokenStartIndex, i - 1 - tokenStartIndex))) {
                 result.Add(str.Substring(tokenStartIndex, i - 1 - tokenStartIndex));
-                result.Add(str[i - 1].ToString());
-                tokenStartIndex = i;
             }
+            result.Add(str[i - 1].ToString());
+            tokenStartIndex = i;
         }
         result.Add(str.Substring(tokenStartIndex));
         return result;
     }
 
-    private bool legalExpression(string str) {
+    private bool validExpresion(List<string> tokens) {
+        if (tokens == null) {
+            throw new NullReferenceException();
+        }
+        if (tokens.Find(str => isNumber(str)) == null) {
+            return false;
+        }
+        int openCount = 0;
+        int closeCount = 0;
+        for (var i = 0; i < tokens.Count - 1; i++) {
+            string token = tokens[i];
+            string nextToken = tokens[i + 1];
+            if (token == CloseDelimeter) {
+                closeCount++;
+                if (closeCount > openCount || !isNumber(tokens[i - 1])) {
+                    return false;
+                }
+            }
+            else if (token == OpenDelimeter) {
+                openCount++;
+                if (!isNumber(nextToken)) {
+                    return false;
+                }
+            }
+            else if (!isNumber(token) && !isNumber(nextToken) && nextToken != CloseDelimeter && nextToken != OpenDelimeter) {
+                return false;
+            }
+        }
+        return openCount == closeCount;
+    }
+    
+    private bool isNumber(string str) =>
+        Double.TryParse(str, out double x);
+
+    private bool validCharacters(string str) {
         if (str.Length == 0) {
             return false;
         }
