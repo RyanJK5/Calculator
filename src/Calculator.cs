@@ -34,18 +34,86 @@ public class Calculator {
             Console.WriteLine("SYNTAX ERROR");
             return;
         }
+        Console.WriteLine(evaluate(tokens, 0, tokens.Count - 1));
+    }
+
+    private double evaluate(List<string> tokens, int startIndex, int endIndex) {
+        for (var i = startIndex; i <= endIndex; i++) {
+            if (tokens[i] == OpenDelimeter)
+            {
+                int oldCount = tokens.Count;
+                evaluate(tokens, i + 1, IndexOfCloseDelimeter(tokens, i, endIndex) - 1);
+                endIndex -= (oldCount - tokens.Count);
+                tokens.RemoveAt(IndexOfCloseDelimeter(tokens, i, endIndex));
+                tokens.RemoveAt(i);
+                endIndex -= 2;
+            }
+        }
+        executeOperations(tokens, startIndex, ref endIndex, createDictionary(new string[] {"^"}, 
+            new Func<double, double, double>[] {(a, b) => Math.Pow(a, b)}));
+        executeOperations(tokens, startIndex, ref endIndex, createDictionary(new string[] {"*", "/"}, 
+            new Func<double, double, double>[] {(a, b) => a * b, (a, b) => a / b}));
+        executeOperations(tokens, startIndex, ref endIndex, createDictionary(new string[] {"+", "-"}, 
+            new Func<double, double, double>[] {(a, b) => a + b, (a, b) => a - b}));
+        return Double.Parse(tokens[startIndex]);
+    }
+
+    private void executeOperations(List<string> tokens, int startIndex, ref int endIndex, 
+        Dictionary<string, Func<double, double, double>> symbolsToOperations) {
+        for (var i = startIndex; i < endIndex; i++) {
+            foreach (string symbol in symbolsToOperations.Keys) {
+                if (tokens[i] == symbol) {
+                    tokens[i - 1] = symbolsToOperations[symbol].Invoke(Double.Parse(tokens[i - 1]), Double.Parse(tokens[i + 1])).ToString();
+                    tokens.RemoveAt(i + 1);
+                    tokens.RemoveAt(i);
+                    endIndex -= 2;
+                    i--;
+                    break;
+                }
+            }
+        }
+    }
+
+    private Dictionary<K, V> createDictionary<K, V>(K[] keys, V[] values) where K : notnull {
+        if (values.Length != keys.Length) {
+            throw new ArgumentException("values and keys must have same length");
+        }
+        var result = new Dictionary<K, V>();
+        for (var i = 0; i < keys.Length; i++) {
+            result.Add(keys[i], values[i]);
+        }
+        return result;
+    }
+
+    private int IndexOfCloseDelimeter(List<string> tokens, int delimIndex, int endIndex) {
+        int delimTotal = 1;
+        for (var j = delimIndex + 1; j <= endIndex; j++) {
+            if (tokens[j] == OpenDelimeter) {
+                delimTotal++;
+            }
+            else if (tokens[j] == CloseDelimeter) {
+                delimTotal--;
+            }
+            if (delimTotal == 0) {
+                return j;
+            }
+        }
+        return -1;
     }
 
     private List<string> createTokens(string str) {
         for (var i = 0; i < str.Length; i++) {
             if (Char.IsWhiteSpace(str[i])) {
-                str = str.Remove(i);
+                str = str.Remove(i, 1);
             }
         }
         var result = new List<string>();
         var tokenStartIndex = 0;
         for (var i = 1; i <= str.Length; i++) {
-            if (i != str.Length && isNumber(str.Substring(tokenStartIndex, i - tokenStartIndex))) {
+            if (isNumber(str.Substring(tokenStartIndex, i - tokenStartIndex))) {
+                if (i == str.Length) {
+                    result.Add(str.Substring(tokenStartIndex));             
+                }
                 continue;
             }
             if (isNumber(str.Substring(tokenStartIndex, i - 1 - tokenStartIndex))) {
@@ -54,7 +122,6 @@ public class Calculator {
             result.Add(str[i - 1].ToString());
             tokenStartIndex = i;
         }
-        result.Add(str.Substring(tokenStartIndex));
         return result;
     }
 
@@ -67,22 +134,26 @@ public class Calculator {
         }
         int openCount = 0;
         int closeCount = 0;
-        for (var i = 0; i < tokens.Count - 1; i++) {
+        for (var i = 0; i < tokens.Count; i++) {
             string token = tokens[i];
-            string nextToken = tokens[i + 1];
             if (token == CloseDelimeter) {
                 closeCount++;
-                if (closeCount > openCount || !isNumber(tokens[i - 1])) {
+                if (closeCount > openCount || (!isNumber(tokens[i - 1]) && tokens[i - 1] != CloseDelimeter)) {
                     return false;
                 }
+                continue;
             }
-            else if (token == OpenDelimeter) {
+            if (token == OpenDelimeter) {
+                if (i == tokens.Count) {
+                    return false;
+                }
                 openCount++;
-                if (!isNumber(nextToken)) {
+                if (!isNumber(tokens[i + 1]) && tokens[i + 1] != OpenDelimeter) {
                     return false;
                 }
             }
-            else if (!isNumber(token) && !isNumber(nextToken) && nextToken != CloseDelimeter && nextToken != OpenDelimeter) {
+            else if (i == tokens.Count || 
+                (!isNumber(token) && !isNumber(tokens[i + 1]) && tokens[i + 1] != CloseDelimeter && tokens[i + 1] != OpenDelimeter)) {
                 return false;
             }
         }
@@ -103,4 +174,4 @@ public class Calculator {
         }
         return true;
     }
-}
+} 
