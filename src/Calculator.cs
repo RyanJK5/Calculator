@@ -16,7 +16,6 @@ public class Calculator {
     private const string OpenDelimeter = "(";
     private const string CloseDelimeter = ")";
 
-
     public void Start() {
         while (true) {
             string? str;
@@ -109,18 +108,24 @@ public class Calculator {
         }
         var result = new List<string>();
         var tokenStartIndex = 0;
-        for (var i = 1; i <= str.Length; i++) {
-            if (isNumber(str.Substring(tokenStartIndex, i - tokenStartIndex))) {
-                if (i == str.Length) {
+        for (var i = 0; i < str.Length; i++) {
+            if (isNumber(str.Substring(tokenStartIndex, i + 1 - tokenStartIndex))) {
+                if (i == str.Length - 1) {
                     result.Add(str.Substring(tokenStartIndex));             
                 }
                 continue;
             }
-            if (isNumber(str.Substring(tokenStartIndex, i - 1 - tokenStartIndex))) {
-                result.Add(str.Substring(tokenStartIndex, i - 1 - tokenStartIndex));
+            if (isNumber(str.Substring(tokenStartIndex, i - tokenStartIndex))) {
+                result.Add(str.Substring(tokenStartIndex, i - tokenStartIndex));
+                if (str[i].ToString() == OpenDelimeter) {
+                    result.Add("*");
+                }
+            } 
+            result.Add(str[i].ToString());
+            if (i < str.Length - 1 && str[i].ToString() == CloseDelimeter && str[i + 1].ToString() == OpenDelimeter) {
+                result.Add("*");
             }
-            result.Add(str[i - 1].ToString());
-            tokenStartIndex = i;
+            tokenStartIndex = i + 1;
         }
         return result;
     }
