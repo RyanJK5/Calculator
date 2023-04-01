@@ -1,5 +1,3 @@
-using System;
-
 public class Calculator {
     
     private static readonly char[] validChars = {
@@ -33,8 +31,11 @@ public class Calculator {
             Console.WriteLine("SYNTAX ERROR");
             return;
         }
-        Console.WriteLine(evaluate(tokens, 0, tokens.Count - 1));
+        Console.WriteLine(Evaluate(tokens));
     }
+
+    public double Evaluate(List<string> tokens) => 
+        evaluate(tokens, 0, tokens.Count - 1);
 
     private double evaluate(List<string> tokens, int startIndex, int endIndex) {
         for (var i = startIndex; i <= endIndex; i++) {
@@ -100,34 +101,58 @@ public class Calculator {
         return -1;
     }
 
-    private List<string> createTokens(string str) {
-        for (var i = 0; i < str.Length; i++) {
-            if (Char.IsWhiteSpace(str[i])) {
-                str = str.Remove(i, 1);
-            }
-        }
+    private List<string> createTokens(string str){
+        str = removeWhiteSpaces(str);
+        
         var result = new List<string>();
         var tokenStartIndex = 0;
         for (var i = 0; i < str.Length; i++) {
             if (isNumber(str.Substring(tokenStartIndex, i + 1 - tokenStartIndex))) {
                 if (i == str.Length - 1) {
-                    result.Add(str.Substring(tokenStartIndex));             
+                    result.Add(str.Substring(tokenStartIndex));
                 }
                 continue;
             }
             if (isNumber(str.Substring(tokenStartIndex, i - tokenStartIndex))) {
                 result.Add(str.Substring(tokenStartIndex, i - tokenStartIndex));
-                if (str[i].ToString() == OpenDelimeter) {
-                    result.Add("*");
-                }
-            } 
-            result.Add(str[i].ToString());
-            if (i < str.Length - 1 && str[i].ToString() == CloseDelimeter && str[i + 1].ToString() == OpenDelimeter) {
-                result.Add("*");
             }
+            result.Add(str[i].ToString());
             tokenStartIndex = i + 1;
         }
+
+        addMultiplicationSymbols(result);
         return result;
+    }
+
+    private string removeWhiteSpaces(string str) {
+        for (var i = 0; i < str.Length; i++) {
+            if (Char.IsWhiteSpace(str[i])) {
+                str = str.Remove(i, 1);
+                i--;
+            }
+            if (str[i] == '.' && (i == 0 || !Char.IsDigit(str[i - 1]))) {
+                str = str.Substring(0, i) + "0" + str.Substring(i);
+            }
+        }
+        return str;
+    }
+
+    private void addMultiplicationSymbols(List<string> tokens) {
+        for (var i = 0; i < tokens.Count; i++) {
+            if (tokens[i] == OpenDelimeter) {
+                if (IndexOfCloseDelimeter(tokens, i, tokens.Count - 1) < 0) {
+                    tokens.Add(CloseDelimeter);
+                }
+                if (i > 0 && (isNumber(tokens[i - 1]) || tokens[i - 1] == CloseDelimeter)) {
+                    tokens.Insert(i, "*");
+                }
+            }
+            if (tokens[i] == CloseDelimeter) {
+                if (i < tokens.Count - 1 && isNumber(tokens[i + 1])) {
+                    tokens.Insert(i + 1, "*");
+                }
+            }
+        }
     }
 
     private bool validExpresion(List<string> tokens) {
